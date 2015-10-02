@@ -66,6 +66,8 @@ public class PerforceOptions  extends AdvancedOption {
 			vals.add( key+"="+p.get(key));
 		}
 		//if( true) return null;
+                if (!p4Env.isSelected())
+                {
 		if( p4cfg.isSelected() ) {
 			vals.add("P4CONFIG="+p4config.getText());
 		} else {
@@ -74,12 +76,18 @@ public class PerforceOptions  extends AdvancedOption {
 			vals.add( "P4CLIENT="+p4client.getText() );
 		}
 		vals.add( "P4DIFF="+p4diff.getText() );
+                
 		String[]arr = new String[vals.size()];
 		vals.toArray(arr);
 		return arr;
+                }
+                else
+                {
+                    return new String[0];
+                }
 	}
 
-	private static JRadioButton p4cfg, p4vals;
+	private static JRadioButton p4cfg, p4vals,p4Env;
 	private static JTextField p4config;
 	private static JTextField p4user, p4port, p4client, p4diff;
 	
@@ -114,6 +122,7 @@ public class PerforceOptions  extends AdvancedOption {
 		dumpPrefs( prefs );
 		pm = new SwingPreferencesMapper( prefs );
 		p4cfg = new JRadioButton("Use P4CONFIG");
+		p4Env = new JRadioButton("Use environment");
 		p4vals = new JRadioButton("Use Separate P4 Vars");
 		p4config = new JTextField(10);
 		p4client = new JTextField(10);
@@ -122,6 +131,7 @@ public class PerforceOptions  extends AdvancedOption {
 		p4user = new JTextField(10);
 		ButtonGroup grp = new ButtonGroup();
 		grp.add( p4cfg );
+		grp.add( p4Env );
 		grp.add( p4vals );
 		mapPrefs("static launch");
 		pm.commit();
@@ -130,8 +140,9 @@ public class PerforceOptions  extends AdvancedOption {
 	private static final void mapPrefs(String how) {
 		Logger.getLogger("org.wonderly.swing.prefs").setLevel(Level.FINER);
 		pm.map("p4cfg", false, p4cfg );
-		pm.map("p4vals", true, p4vals );
-		log.info(how+": config: "+p4cfg.isSelected()+", vals: "+p4vals.isSelected() );
+		pm.map("p4Env", true, p4Env );
+		pm.map("p4vals", false, p4vals );
+		log.info(how+": config: "+p4cfg.isSelected()+","+p4Env.isSelected()+", vals: "+p4vals.isSelected() );
 		pm.map("p4config", ".p4config", p4config);
 		String u = System.getProperty("P4USER");
 		log.info(how+":P4USER="+u+", userdir="+new File(System.getProperty("user.home") ).getName() );
@@ -156,9 +167,10 @@ public class PerforceOptions  extends AdvancedOption {
 		return new OptionsPanelController() {
 			List<PropertyChangeListener>lis = new ArrayList<PropertyChangeListener>();
 			public @Override void update() {
-				log.info("update(), config: "+p4cfg.isSelected()+", vals: "+p4vals.isSelected() );
+				log.info("update(), config: "+p4cfg.isSelected()+","+p4Env.isSelected()+", vals: "+p4vals.isSelected() );
 				pm.map("p4cfg", false, p4cfg );
-				pm.map("p4vals", true, p4vals );
+				pm.map("p4Env", true, p4Env );
+				pm.map("p4vals", false, p4vals );
 				pm.map("p4config", ".p4config", p4config);
 				String u = System.getProperty("P4USER");
 				log.info("P4USER="+u+", userdir="+new File(System.getProperty("user.home") ).getName() );
@@ -182,21 +194,25 @@ public class PerforceOptions  extends AdvancedOption {
 				map.put("p4client",p4client.getText());
 				map.put("p4config",p4config.getText());
 				map.put("p4cfg",p4cfg.isSelected());
+				map.put("p4Env",p4Env.isSelected());
 				map.put("p4vals",p4vals.isSelected());
 			}
 
 			public @Override void applyChanges() {
-				log.info("applyChanges(), config: "+p4cfg.isSelected()+", vals: "+p4vals.isSelected());
+				log.info("applyChanges(), config: "+p4cfg.isSelected()+","+p4Env.isSelected()+", vals: "+p4vals.isSelected());
 				pm.commit();
 				pm.map("p4cfg", false, p4cfg );
-				pm.map("p4vals", true, p4vals );
-				log.info("applyChanges() after map, config: "+p4cfg.isSelected()+", vals: "+p4vals.isSelected());
+				pm.map("p4Env", true, p4Env );
+				pm.map("p4vals", false, p4vals );
+				log.info("applyChanges() after map, config: "+p4cfg.isSelected()+","+p4Env.isSelected()+", vals: "+p4vals.isSelected());
 				propChange( "p4config", p4cfg.getText() );
+				propChange( "p4Env", p4Env.getText() );
 				propChange( "p4user", p4user.getText() );
 				propChange( "p4port", p4port.getText() );
 				propChange( "p4client", p4client.getText() );
 				propChange( "p4diff", p4diff.getText() );
 				propChange( "p4useconfig", p4cfg.isSelected() );
+				propChange( "p4useenvironment", p4Env.isSelected() );
 				propChange( "p4usevals", p4vals.isSelected() );
 			}
 
@@ -238,6 +254,8 @@ public class PerforceOptions  extends AdvancedOption {
 //				final JCheckBox p4cfg;
 				int y = -1;
 
+				pk.pack( p4Env ).gridx(0).gridy(++y).fillx().gridw(2);
+				pk.pack( new JSeparator() ).gridx(0).gridw(2).gridy(++y).fillx().inset(6,6,6,6);
 				pk.pack( p4cfg ).gridx(0).gridy(++y).fillx().gridw(2);
 				pk.pack( new JLabel("P4CONFIG:") ).gridx(0).gridy(++y).inset(2,0,0,0);
 				pk.pack( p4config ).gridx(1).gridy(y).fillx().inset(2,4,0,0);
@@ -249,6 +267,7 @@ public class PerforceOptions  extends AdvancedOption {
 					}
 				};
 				p4cfg.addActionListener( chg );
+				p4Env.addActionListener( chg );
 				p4vals.addActionListener( chg );
 				JPanel lp = new JPanel();
 				pk.pack( lp ).gridx(0).gridy(++y).fillboth().gridw(2);
@@ -289,6 +308,7 @@ public class PerforceOptions  extends AdvancedOption {
 				p4diff.getDocument().addDocumentListener( dlis );
 				p4port.getDocument().addDocumentListener( dlis );
 
+				ModalComponent emc = new ModalComponent( p4Env );
 				ModalComponent cmc = new ModalComponent( p4cfg );
 				ModalComponent mc = new ModalComponent( p4vals );
 				mc.add( p4client );
